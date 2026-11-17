@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaLink - Grupo 502</title>
+
+<style>
+    body {
+        font-family: system-ui, sans-serif;
+        background: #eef2f7;
+        margin: 0;
+        padding: 15px;
+        color: #333;
+    }
+
+    .container {
+        max-width: 650px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        color: #1b4f72;
+        text-align: center;
+        margin-top: 0;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .form-col {
+        flex: 1;
+        min-width: 140px;
+    }
+
+    label {
+        display: block;
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    button {
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        color: white;
+    }
+
+    .btn-add {
+        background: #1b4f72;
+        width: 100%;
+        margin-top: 5px;
+    }
+
+    .btn-add:hover {
+        background: #154360;
+    }
+
+    .filter-bar {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid #ddd;
+        flex-wrap: wrap;
+    }
+
+    .contacto-item {
+        border: 1px solid #ddd;
+        border-left: 5px solid #1b4f72;
+        padding: 12px;
+        margin-top: 10px;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+    .badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .btn-edit {
+        background: #ffc107;
+        color: #000;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .btn-delete {
+        background: #dc3545;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .btn-cancel {
+        background: #6c757d;
+        margin-top: 5px;
+    }
+
+    .datos {
+        font-size: 13px;
+        color: #555;
+        line-height: 1.7;
+    }
+
+    #mensaje {
+        font-size: 13px;
+        text-align: center;
+        color: #1b4f72;
+        font-weight: bold;
+    }
+
+    @media(max-width: 450px) {
+        .contacto-item {
+            overflow-wrap: anywhere;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>📒 AgendaLink - Directorio Profesional</h2>
+
+    <p style="text-align:center; font-size:13px; color:#666;">
+        Registro y gestión de contactos profesionales
+    </p>
+
+    <h3 style="color:#1b4f72;">Registrar contacto</h3>
+
+    <form id="formulario">
+
+        <div class="form-row">
+            <div class="form-col">
+                <label>Nombre completo:</label>
+                <input type="text" id="nombre"
+                placeholder="Ej. María López" required>
+            </div>
+
+            <div class="form-col">
+                <label>Profesión:</label>
+                <input type="text" id="profesion"
+                placeholder="Ej. Diseñadora" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-col">
+                <label>Empresa:</label>
+                <input type="text" id="empresa"
+                placeholder="Nombre de la empresa">
+            </div>
+
+            <div class="form-col">
+                <label>Teléfono:</label>
+                <input type="tel" id="telefono"
+                placeholder="10 dígitos" maxlength="10"
+                pattern="[0-9]{10}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-col">
+                <label>Correo electrónico:</label>
+                <input type="email" id="correo"
+                placeholder="ejemplo@gmail.com" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-add" id="btnGuardar">
+            Registrar contacto
+        </button>
+
+        <button type="button" class="btn-cancel"
+        onclick="cancelarEdicion()">
+            Cancelar
+        </button>
+
+    </form>
+
+    <p id="mensaje"></p>
+
+    <!-- BUSCADOR -->
+
+    <div class="filter-bar">
+        <label style="margin:0;">Buscar contacto:</label>
+
+        <input type="text" id="buscar"
+        placeholder="Nombre o profesión..."
+        style="flex:1; min-width:130px;">
+
+        <button onclick="limpiarBusqueda()"
+        style="background:#6c757d; padding:7px 12px; font-size:12px;">
+            Ver todos
+        </button>
+    </div>
+
+    <!-- DIRECTORIO -->
+
+    <h3 style="color:#1b4f72;">📇 Directorio de contactos</h3>
+
+    <div id="listaContactos"></div>
+
+</div>
+
+<script>
+
+// Cargar contactos guardados
+let contactos = JSON.parse(
+    localStorage.getItem("agendaLink502")
+) || [];
+
+let indiceEdicion = -1;
+
+// Registrar contacto
+function agendarContacto() {
+
+    const nombre = document.getElementById("nombre").value.trim();
+    const profesion = document.getElementById("profesion").value.trim();
+    const empresa = document.getElementById("empresa").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
+    const correo = document.getElementById("correo").value.trim();
+
+    const mensaje = document.getElementById("mensaje");
+
+    if (!nombre || !profesion || !telefono || !correo) {
+        mensaje.textContent = "Complete los campos obligatorios.";
+        return;
+    }
+
+    if (!/^[0-9]{10}$/.test(telefono)) {
+        mensaje.textContent = "El teléfono debe tener 10 dígitos.";
+        return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        mensaje.textContent = "Ingrese un correo válido.";
+        return;
+    }
+
+    const contacto = {
+        nombre,
+        profesion,
+        empresa,
+        telefono,
+        correo
+    };
+
+    if (indiceEdicion === -1) {
+
+        contactos.push(contacto);
+        mensaje.textContent = "¡Contacto registrado correctamente!";
+
+    } else {
+
+        contactos[indiceEdicion] = contacto;
+        mensaje.textContent = "¡Contacto actualizado correctamente!";
+
+    }
+
+    guardarContactos();
+
+    document.getElementById("formulario").reset();
+
+    indiceEdicion = -1;
+
+    document.getElementById("btnGuardar").textContent =
+        "Registrar contacto";
+}
+
+// Guardar información
+function guardarContactos() {
+
+    localStorage.setItem(
+        "agendaLink502",
+        JSON.stringify(contactos)
+    );
+
+    mostrarContactos();
+}
+
+// Mostrar directorio
+function mostrarContactos() {
+
+    const lista = document.getElementById("listaContactos");
+    const busqueda = document.getElementById("buscar").value.toLowerCase();
+
+    lista.innerHTML = "";
+
+    const encontrados = contactos
+        .map((c, i) => ({...c, indice: i}))
+        .filter(c =>
+            c.nombre.toLowerCase().includes(busqueda) ||
+            c.profesion.toLowerCase().includes(busqueda) ||
+            c.empresa.toLowerCase().includes(busqueda)
+        );
+
+    if (encontrados.length === 0) {
+
+        lista.innerHTML = `
+        <p style="text-align:center; color:#777; margin-top:20px;">
+            No hay contactos registrados.
+        </p>`;
+
+        return;
+    }
+
+    encontrados.forEach(c => {
+
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "contacto-item";
+
+        const titulo = document.createElement("div");
+        titulo.style.marginBottom = "8px";
+
+        const nombre = document.createElement("strong");
+        nombre.textContent = c.nombre;
+        nombre.style.fontSize = "15px";
+
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = c.profesion;
+
+        titulo.append(nombre, " ", badge);
+
+        const datos = document.createElement("div");
+        datos.className = "datos";
+        datos.textContent =
+            "🏢 Empresa: " + (c.empresa || "No indicada") +
+            " | 📞 Teléfono: " + c.telefono +
+            " | ✉️ Correo: " + c.correo;
+
+        const botones = document.createElement("div");
+        botones.style.marginTop = "10px";
+
+        const editar = document.createElement("button");
+        editar.className = "btn-edit";
+        editar.textContent = "Editar";
+        editar.onclick = () => editarContacto(c.indice);
+
+        const eliminar = document.createElement("button");
+        eliminar.className = "btn-delete";
+        eliminar.textContent = "Eliminar";
+        eliminar.onclick = () => eliminarContacto(c.indice);
+
+        botones.append(editar, eliminar);
+
+        tarjeta.append(titulo, datos, botones);
+        lista.appendChild(tarjeta);
+
+    });
+}
+
+// Editar contacto
+function editarContacto(indice) {
+
+    const c = contactos[indice];
+
+    document.getElementById("nombre").value = c.nombre;
+    document.getElementById("profesion").value = c.profesion;
+    document.getElementById("empresa").value = c.empresa;
+    document.getElementById("telefono").value = c.telefono;
+    document.getElementById("correo").value = c.correo;
+
+    indiceEdicion = indice;
+
+    document.getElementById("btnGuardar").textContent =
+        "Actualizar contacto";
+
+    document.getElementById("mensaje").textContent =
+        "Editando información del contacto.";
+
+    window.scrollTo({top:0, behavior:"smooth"});
+}
+
+// Eliminar contacto
+function eliminarContacto(indice) {
+
+    if (confirm("¿Deseas eliminar este contacto?")) {
+
+        contactos.splice(indice, 1);
+
+        guardarContactos();
+
+        document.getElementById("mensaje").textContent =
+            "Contacto eliminado correctamente.";
+
+    }
+}
+
+// Cancelar edición
+function cancelarEdicion() {
+
+    document.getElementById("formulario").reset();
+
+    indiceEdicion = -1;
+
+    document.getElementById("btnGuardar").textContent =
+        "Registrar contacto";
+
+    document.getElementById("mensaje").textContent = "";
+
+}
+
+// Limpiar búsqueda
+function limpiarBusqueda() {
+
+    document.getElementById("buscar").value = "";
+
+    mostrarContactos();
+
+}
+
+// Buscar en tiempo real
+document.getElementById("buscar").addEventListener(
+    "input", mostrarContactos
+);
+
+// Enviar formulario
+document.getElementById("formulario").addEventListener(
+    "submit", function(e) {
+        e.preventDefault();
+        agendarContacto();
+    }
+);
+
+// Mostrar contactos al iniciar
+mostrarContactos();
+
+</script>
+
+</body>
+</html>
